@@ -10,10 +10,22 @@ using namespace std;
 SDL_Window* window;
 SDL_Renderer* renderer;
 SDL_Event Event;
-SDL_Texture *background,*character;
-SDL_Rect rect_background,rect_character;
+SDL_Texture *background, *texture_npc, *texture_tile;
+SDL_Rect rect_background, rect_character, rect_npc, rect_tile, rect_tileset;
 
+bool collision(SDL_Rect r1, SDL_Rect r2)
+{
+    if(r1.x+r1.w < r2.x)
+        return false;
+    if(r1.x > r2.x+r2.w)
+        return false;
+    if(r1.y+r1.h<r2.y)
+        return false;
+    if(r1.y > r2.y+r2.h)
+        return false;
 
+    return true;
+}
 
 int main( int argc, char* args[] )
 {
@@ -41,10 +53,6 @@ int main( int argc, char* args[] )
     SDL_QueryTexture(background, NULL, NULL, &w, &h);
     rect_background.x = 0; rect_background.y = 0; rect_background.w = w; rect_background.h = h;
 
-    character = IMG_LoadTexture(renderer, "personaje/down1.png");
-    SDL_QueryTexture(character, NULL, NULL, &w, &h);
-    rect_character.x = 0; rect_character.y = 100; rect_character.w = w; rect_character.h = h;
-
     char orientation = 'd';// d u l r
     int current_sprite = 0;
     int animation_velocity = 20;
@@ -59,6 +67,33 @@ int main( int argc, char* args[] )
     sprites['l'].push_back(IMG_LoadTexture(renderer, "personaje/left2.png"));
     sprites['r'].push_back(IMG_LoadTexture(renderer, "personaje/right1.png"));
     sprites['r'].push_back(IMG_LoadTexture(renderer, "personaje/right2.png"));
+
+    SDL_QueryTexture(sprites['u'][0], NULL, NULL, &w, &h);
+    rect_character.x = 0;
+    rect_character.y = 100;
+    rect_character.w = w;
+    rect_character.h = h;
+
+    texture_npc = IMG_LoadTexture(renderer,"npc.png");
+    SDL_QueryTexture(texture_npc, NULL, NULL, &w, &h);
+    rect_npc.x = 300;
+    rect_npc.y = 100;
+    rect_npc.w = w;
+    rect_npc.h = h;
+
+    texture_tile = IMG_LoadTexture(renderer,"tile/crypt.png");
+    rect_tile.x = 32*15;
+    rect_tile.y = 32*13;
+    rect_tile.w = 32;
+    rect_tile.h = 32;
+
+    SDL_QueryTexture(texture_npc, NULL, NULL, &w, &h);
+    rect_tileset.x = 0;
+    rect_tileset.y = 0;
+    rect_tileset.w = w;
+    rect_tileset.h = h;
+
+    int mapa[5][5];
 
     //Main Loop
     while(true)
@@ -76,21 +111,37 @@ int main( int argc, char* args[] )
         if(currentKeyStates[ SDL_SCANCODE_D ])
         {
             rect_character.x+=velocity;
+            if(collision(rect_character,rect_npc))
+            {
+                rect_character.x-=velocity;
+            }
             orientation='r';
         }
         if(currentKeyStates[ SDL_SCANCODE_A ])
         {
             rect_character.x-=velocity;
+            if(collision(rect_character,rect_npc))
+            {
+                rect_character.x+=velocity;
+            }
             orientation='l';
         }
         if(currentKeyStates[ SDL_SCANCODE_S ])
         {
             rect_character.y+=velocity;
+            if(collision(rect_character,rect_npc))
+            {
+                rect_character.y-=velocity;
+            }
             orientation='d';
         }
         if(currentKeyStates[ SDL_SCANCODE_W ])
         {
             rect_character.y-=velocity;
+            if(collision(rect_character,rect_npc))
+            {
+                rect_character.y+=velocity;
+            }
             orientation='u';
         }
         if(currentKeyStates[ SDL_SCANCODE_LSHIFT ])
@@ -112,10 +163,10 @@ int main( int argc, char* args[] )
 
         SDL_Delay(17);
 
-        cout<<frame<<endl;
-
         SDL_RenderCopy(renderer, background, NULL, &rect_background);
+        SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
         SDL_RenderCopy(renderer, sprites[orientation][current_sprite], NULL, &rect_character);
+        SDL_RenderCopy(renderer, texture_npc, NULL, &rect_npc);
         SDL_RenderPresent(renderer);
         frame++;
     }
