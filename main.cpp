@@ -48,6 +48,66 @@ vector<int> getMapa()
     return mapa;
 }
 
+vector<int> getMapa2()
+{
+    vector<int> mapa;
+    string archivo = "tile/test.tmx";
+    TiXmlDocument doc(archivo.c_str());
+    bool loadOkay = doc.LoadFile();
+    TiXmlElement *map_node = doc.FirstChild("map")->ToElement();
+    TiXmlElement *layer_node = map_node->FirstChild("layer")->NextSibling("layer")->ToElement();
+
+    for(TiXmlNode *tile_node = layer_node->FirstChild("data")->FirstChild("tile");
+        tile_node!=NULL;
+        tile_node=tile_node->NextSibling("tile"))
+    {
+        mapa.push_back(atoi(tile_node->ToElement()->Attribute("gid")));
+    }
+    return mapa;
+}
+
+void dibujarLayer(SDL_Renderer* renderer,vector<int>mapa)
+{
+        int x_pantalla = 0;
+        int y_pantalla = 0;
+        for(int i=0;i<mapa.size();i++)
+        {
+            int x = 0;
+            int y = 0;
+            for(int acum = 1;acum<mapa[i];acum++)
+            {
+                x+=32;
+                if(acum%16==0)
+                {
+                    y+=32;
+                    x=0;
+                }
+            }
+
+//            rect_tile.x = 32*(mapa[i]%16-1);
+//            rect_tile.y = 32*(mapa[i]/16);
+            rect_tile.x = x;
+            rect_tile.y = y;
+            rect_tile.w = 32;
+            rect_tile.h = 32;
+
+            //cout<<rect_tile.x<<","<<rect_tile.y<<endl;
+
+            rect_tileset.x = x_pantalla;
+            rect_tileset.y = y_pantalla;
+
+            if(mapa[i]!=0)
+                SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
+
+            x_pantalla+=32;
+            if(x_pantalla>=320)
+            {
+                x_pantalla=0;
+                y_pantalla+=32;
+            }
+        }
+}
+
 int main( int argc, char* args[] )
 {
     //Init SDL
@@ -115,6 +175,7 @@ int main( int argc, char* args[] )
     rect_tileset.h = h;
 
     vector<int> mapa = getMapa();
+    vector<int> mapa2 = getMapa2();
 
     //Main Loop
     while(true)
@@ -186,46 +247,9 @@ int main( int argc, char* args[] )
 
         SDL_RenderCopy(renderer, background, NULL, &rect_background);
 
+        dibujarLayer(renderer,mapa);
+        dibujarLayer(renderer,mapa2);
 
-        int x_pantalla = 0;
-        int y_pantalla = 0;
-        for(int i=0;i<mapa.size();i++)
-        {
-            int x = 0;
-            int y = 0;
-            for(int acum = 1;acum<mapa[i];acum++)
-            {
-                x+=32;
-                if(acum%16==0)
-                {
-                    y+=32;
-                    x=0;
-                }
-            }
-
-//            rect_tile.x = 32*(mapa[i]%16-1);
-//            rect_tile.y = 32*(mapa[i]/16);
-            rect_tile.x = x;
-            rect_tile.y = y;
-            rect_tile.w = 32;
-            rect_tile.h = 32;
-
-            //cout<<"Test:"<<32*(mapa[i]/10)<<endl;
-
-            cout<<rect_tile.x<<","<<rect_tile.y<<endl;
-
-            rect_tileset.x = x_pantalla;
-            rect_tileset.y = y_pantalla;
-
-            SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
-
-            x_pantalla+=32;
-            if(x_pantalla>=320)
-            {
-                x_pantalla=0;
-                y_pantalla+=32;
-            }
-        }
         SDL_RenderCopy(renderer, sprites[orientation][current_sprite], NULL, &rect_character);
         SDL_RenderCopy(renderer, texture_npc, NULL, &rect_npc);
         SDL_RenderPresent(renderer);
