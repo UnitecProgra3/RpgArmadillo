@@ -29,33 +29,18 @@ bool collision(SDL_Rect r1, SDL_Rect r2)
     return true;
 }
 
-
-vector<int> getMapa()
+vector<int> getMapa(int layer)
 {
     vector<int> mapa;
     string archivo = "tile/test.tmx";
     TiXmlDocument doc(archivo.c_str());
     bool loadOkay = doc.LoadFile();
     TiXmlElement *map_node = doc.FirstChild("map")->ToElement();
-    TiXmlElement *layer_node = map_node->FirstChild("layer")->ToElement();
+    TiXmlNode*layer_node_temp = map_node->FirstChild("layer");
+    for(int i=1;i<layer;i++)
+        layer_node_temp=layer_node_temp->NextSibling("layer");
 
-    for(TiXmlNode *tile_node = layer_node->FirstChild("data")->FirstChild("tile");
-        tile_node!=NULL;
-        tile_node=tile_node->NextSibling("tile"))
-    {
-        mapa.push_back(atoi(tile_node->ToElement()->Attribute("gid")));
-    }
-    return mapa;
-}
-
-vector<int> getMapa2()
-{
-    vector<int> mapa;
-    string archivo = "tile/test.tmx";
-    TiXmlDocument doc(archivo.c_str());
-    bool loadOkay = doc.LoadFile();
-    TiXmlElement *map_node = doc.FirstChild("map")->ToElement();
-    TiXmlElement *layer_node = map_node->FirstChild("layer")->NextSibling("layer")->ToElement();
+    TiXmlElement *layer_node = layer_node_temp->ToElement();
 
     for(TiXmlNode *tile_node = layer_node->FirstChild("data")->FirstChild("tile");
         tile_node!=NULL;
@@ -68,44 +53,44 @@ vector<int> getMapa2()
 
 void dibujarLayer(SDL_Renderer* renderer,vector<int>mapa)
 {
-        int x_pantalla = 0;
-        int y_pantalla = 0;
-        for(int i=0;i<mapa.size();i++)
+    int x_pantalla = 0;
+    int y_pantalla = 0;
+    for(int i=0;i<mapa.size();i++)
+    {
+        int x = 0;
+        int y = 0;
+        for(int acum = 1;acum<mapa[i];acum++)
         {
-            int x = 0;
-            int y = 0;
-            for(int acum = 1;acum<mapa[i];acum++)
+            x+=32;
+            if(acum%16==0)
             {
-                x+=32;
-                if(acum%16==0)
-                {
-                    y+=32;
-                    x=0;
-                }
-            }
-
-//            rect_tile.x = 32*(mapa[i]%16-1);
-//            rect_tile.y = 32*(mapa[i]/16);
-            rect_tile.x = x;
-            rect_tile.y = y;
-            rect_tile.w = 32;
-            rect_tile.h = 32;
-
-            //cout<<rect_tile.x<<","<<rect_tile.y<<endl;
-
-            rect_tileset.x = x_pantalla;
-            rect_tileset.y = y_pantalla;
-
-            if(mapa[i]!=0)
-                SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
-
-            x_pantalla+=32;
-            if(x_pantalla>=320)
-            {
-                x_pantalla=0;
-                y_pantalla+=32;
+                y+=32;
+                x=0;
             }
         }
+
+    //            rect_tile.x = 32*(mapa[i]%16-1);
+    //            rect_tile.y = 32*(mapa[i]/16);
+        rect_tile.x = x;
+        rect_tile.y = y;
+        rect_tile.w = 32;
+        rect_tile.h = 32;
+
+        //cout<<rect_tile.x<<","<<rect_tile.y<<endl;
+
+        rect_tileset.x = x_pantalla;
+        rect_tileset.y = y_pantalla;
+
+        if(mapa[i]!=0)
+            SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
+
+        x_pantalla+=32;
+        if(x_pantalla>=320)
+        {
+            x_pantalla=0;
+            y_pantalla+=32;
+        }
+    }
 }
 
 int main( int argc, char* args[] )
@@ -174,8 +159,8 @@ int main( int argc, char* args[] )
     rect_tileset.w = w;
     rect_tileset.h = h;
 
-    vector<int> mapa = getMapa();
-    vector<int> mapa2 = getMapa2();
+    vector<int> mapa = getMapa(1);
+    vector<int> mapa2 = getMapa(2);
 
     //Main Loop
     while(true)
@@ -248,9 +233,11 @@ int main( int argc, char* args[] )
         SDL_RenderCopy(renderer, background, NULL, &rect_background);
 
         dibujarLayer(renderer,mapa);
-        dibujarLayer(renderer,mapa2);
 
         SDL_RenderCopy(renderer, sprites[orientation][current_sprite], NULL, &rect_character);
+
+        dibujarLayer(renderer,mapa2);
+
         SDL_RenderCopy(renderer, texture_npc, NULL, &rect_npc);
         SDL_RenderPresent(renderer);
         frame++;
