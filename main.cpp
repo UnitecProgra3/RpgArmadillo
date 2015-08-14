@@ -5,6 +5,8 @@
 #include<map>
 #include<vector>
 
+#include "TinyXml/tinyxml.h"
+
 using namespace std;
 
 SDL_Window* window;
@@ -27,6 +29,25 @@ bool collision(SDL_Rect r1, SDL_Rect r2)
     return true;
 }
 
+
+vector<int> getMapa()
+{
+    vector<int> mapa;
+    string archivo = "tile/test.tmx";
+    TiXmlDocument doc(archivo.c_str());
+    bool loadOkay = doc.LoadFile();
+    TiXmlElement *map_node = doc.FirstChild("map")->ToElement();
+    TiXmlElement *layer_node = map_node->FirstChild("layer")->ToElement();
+
+    for(TiXmlNode *tile_node = layer_node->FirstChild("data")->FirstChild("tile");
+        tile_node!=NULL;
+        tile_node=tile_node->NextSibling("tile"))
+    {
+        mapa.push_back(atoi(tile_node->ToElement()->Attribute("gid")));
+    }
+    return mapa;
+}
+
 int main( int argc, char* args[] )
 {
     //Init SDL
@@ -35,7 +56,7 @@ int main( int argc, char* args[] )
         return 10;
     }
     //Creates a SDL Window
-    if((window = SDL_CreateWindow("Image Loading", 100, 100, 500/*WIDTH*/, 250/*HEIGHT*/, SDL_WINDOW_RESIZABLE | SDL_RENDERER_PRESENTVSYNC)) == NULL)
+    if((window = SDL_CreateWindow("Image Loading", 100, 100, 320/*WIDTH*/, 320/*HEIGHT*/, SDL_WINDOW_RESIZABLE | SDL_RENDERER_PRESENTVSYNC)) == NULL)
     {
         return 20;
     }
@@ -82,8 +103,8 @@ int main( int argc, char* args[] )
     rect_npc.h = h;
 
     texture_tile = IMG_LoadTexture(renderer,"tile/crypt.png");
-    rect_tile.x = 32*15;
-    rect_tile.y = 32*13;
+    rect_tile.x = 32*4;
+    rect_tile.y = 32*5;
     rect_tile.w = 32;
     rect_tile.h = 32;
 
@@ -93,7 +114,7 @@ int main( int argc, char* args[] )
     rect_tileset.w = w;
     rect_tileset.h = h;
 
-    int mapa[5][5];
+    vector<int> mapa = getMapa();
 
     //Main Loop
     while(true)
@@ -164,7 +185,47 @@ int main( int argc, char* args[] )
         SDL_Delay(17);
 
         SDL_RenderCopy(renderer, background, NULL, &rect_background);
-        SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
+
+
+        int x_pantalla = 0;
+        int y_pantalla = 0;
+        for(int i=0;i<mapa.size();i++)
+        {
+            int x = 0;
+            int y = 0;
+            for(int acum = 1;acum<mapa[i];acum++)
+            {
+                x+=32;
+                if(acum%16==0)
+                {
+                    y+=32;
+                    x=0;
+                }
+            }
+
+//            rect_tile.x = 32*(mapa[i]%16-1);
+//            rect_tile.y = 32*(mapa[i]/16);
+            rect_tile.x = x;
+            rect_tile.y = y;
+            rect_tile.w = 32;
+            rect_tile.h = 32;
+
+            //cout<<"Test:"<<32*(mapa[i]/10)<<endl;
+
+            cout<<rect_tile.x<<","<<rect_tile.y<<endl;
+
+            rect_tileset.x = x_pantalla;
+            rect_tileset.y = y_pantalla;
+
+            SDL_RenderCopy(renderer, texture_tile, &rect_tile, &rect_tileset);
+
+            x_pantalla+=32;
+            if(x_pantalla>=320)
+            {
+                x_pantalla=0;
+                y_pantalla+=32;
+            }
+        }
         SDL_RenderCopy(renderer, sprites[orientation][current_sprite], NULL, &rect_character);
         SDL_RenderCopy(renderer, texture_npc, NULL, &rect_npc);
         SDL_RenderPresent(renderer);
