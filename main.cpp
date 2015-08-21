@@ -17,13 +17,13 @@ SDL_Rect rect_background, rect_character, rect_npc, rect_tile, rect_tileset;
 
 bool collision(SDL_Rect r1, SDL_Rect r2)
 {
-    if(r1.x+r1.w < r2.x)
+    if(r1.x+r1.w <= r2.x)
         return false;
-    if(r1.x > r2.x+r2.w)
+    if(r1.x >= r2.x+r2.w)
         return false;
-    if(r1.y+r1.h<r2.y)
+    if(r1.y+r1.h<=r2.y)
         return false;
-    if(r1.y > r2.y+r2.h)
+    if(r1.y >= r2.y+r2.h)
         return false;
 
     return true;
@@ -93,6 +93,61 @@ void dibujarLayer(SDL_Renderer* renderer,vector<int>mapa)
     }
 }
 
+bool collisionLayer(vector<int>collision_map,SDL_Rect rect_personaje)
+{
+    int x_pantalla = 0;
+    int y_pantalla = 0;
+    for(int i=0;i<collision_map.size();i++)
+    {
+        int x = 0;
+        int y = 0;
+        for(int acum = 1;acum<collision_map[i];acum++)
+        {
+            x+=32;
+            if(acum%16==0)
+            {
+                y+=32;
+                x=0;
+            }
+        }
+
+    //            rect_tile.x = 32*(mapa[i]%16-1);
+    //            rect_tile.y = 32*(mapa[i]/16);
+        rect_tile.x = x;
+        rect_tile.y = y;
+        rect_tile.w = 32;
+        rect_tile.h = 32;
+
+        //cout<<rect_tile.x<<","<<rect_tile.y<<endl;
+
+        rect_tileset.x = x_pantalla;
+        rect_tileset.y = y_pantalla;
+        rect_tileset.w = 32;
+        rect_tileset.h = 32;
+
+        if(collision_map[i]!=0)
+        {
+            if(collision(rect_personaje,rect_tileset))
+            {
+                cout<<"Test"<<endl;
+                cout<<rect_personaje.x<<","<<rect_personaje.y<<endl;
+                cout<<rect_personaje.w<<","<<rect_personaje.h<<endl;
+                cout<<rect_tileset.x<<","<<rect_tileset.y<<endl;
+                cout<<rect_tileset.w<<","<<rect_tileset.h<<endl;
+                return true;
+            }
+        }
+
+        x_pantalla+=32;
+        if(x_pantalla>=320)
+        {
+            x_pantalla=0;
+            y_pantalla+=32;
+        }
+    }
+    return false;
+}
+
 int main( int argc, char* args[] )
 {
     //Init SDL
@@ -122,7 +177,7 @@ int main( int argc, char* args[] )
     char orientation = 'd';// d u l r
     int current_sprite = 0;
     int animation_velocity = 20;
-    int velocity = 3;
+    int velocity = 10;
     int frame = 0;
     map<char,vector<SDL_Texture*> >sprites;
     sprites['u'].push_back(IMG_LoadTexture(renderer, "personaje/up1.png"));
@@ -136,7 +191,7 @@ int main( int argc, char* args[] )
 
     SDL_QueryTexture(sprites['u'][0], NULL, NULL, &w, &h);
     rect_character.x = 0;
-    rect_character.y = 100;
+    rect_character.y = 0;
     rect_character.w = w;
     rect_character.h = h;
 
@@ -161,6 +216,7 @@ int main( int argc, char* args[] )
 
     vector<int> mapa = getMapa(1);
     vector<int> mapa2 = getMapa(2);
+    vector<int> collision_map = getMapa(3);
 
     //Main Loop
     while(true)
@@ -182,12 +238,20 @@ int main( int argc, char* args[] )
             {
                 rect_character.x-=velocity;
             }
+            if(collisionLayer(collision_map,rect_character))
+            {
+                rect_character.x-=velocity;
+            }
             orientation='r';
         }
         if(currentKeyStates[ SDL_SCANCODE_A ])
         {
             rect_character.x-=velocity;
             if(collision(rect_character,rect_npc))
+            {
+                rect_character.x+=velocity;
+            }
+            if(collisionLayer(collision_map,rect_character))
             {
                 rect_character.x+=velocity;
             }
@@ -200,12 +264,20 @@ int main( int argc, char* args[] )
             {
                 rect_character.y-=velocity;
             }
+            if(collisionLayer(collision_map,rect_character))
+            {
+                rect_character.y-=velocity;
+            }
             orientation='d';
         }
         if(currentKeyStates[ SDL_SCANCODE_W ])
         {
             rect_character.y-=velocity;
             if(collision(rect_character,rect_npc))
+            {
+                rect_character.y+=velocity;
+            }
+            if(collisionLayer(collision_map,rect_character))
             {
                 rect_character.y+=velocity;
             }
@@ -237,6 +309,8 @@ int main( int argc, char* args[] )
         SDL_RenderCopy(renderer, sprites[orientation][current_sprite], NULL, &rect_character);
 
         dibujarLayer(renderer,mapa2);
+
+        dibujarLayer(renderer,collision_map);
 
         SDL_RenderCopy(renderer, texture_npc, NULL, &rect_npc);
         SDL_RenderPresent(renderer);

@@ -32,6 +32,12 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="TinyXml/tinystr.cpp" />
+		<Unit filename="TinyXml/tinystr.h" />
+		<Unit filename="TinyXml/tinyxml.cpp" />
+		<Unit filename="TinyXml/tinyxml.h" />
+		<Unit filename="TinyXml/tinyxmlerror.cpp" />
+		<Unit filename="TinyXml/tinyxmlparser.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
